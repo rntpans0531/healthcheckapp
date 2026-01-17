@@ -131,5 +131,33 @@ export const dbService = {
       console.error("Error fetching documents: ", error);
       return [];
     }
+  },
+  fetchRecentReports: async (userId: string, startDate: string): Promise<FullReport[]> => {
+    try {
+      const reportsRef = collection(db, 'reports');
+      // String comparison works for ISO dates (YYYY-MM-DD)
+      const q = query(
+        reportsRef, 
+        where("userId", "==", userId),
+        where("date", ">=", startDate)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const reports: FullReport[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        reports.push({
+            id: doc.id,
+            userId: data.userId,
+            date: data.date,
+            dailyLog: data.dailyLog,
+            painRecords: data.painRecords
+        });
+      });
+      return reports;
+    } catch (error) {
+      console.error("Error fetching recent reports: ", error);
+      return [];
+    }
   }
 };

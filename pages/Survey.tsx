@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { PainRecord } from '../types';
 import { CheckCircle } from 'lucide-react';
+import { dbService } from '../services/firebase';
+import { subDays, format, parseISO, differenceInDays } from 'date-fns';
 
 const partNames: Record<string, string> = {
   neck: '목',
@@ -27,6 +29,36 @@ export const Survey: React.FC = () => {
   const navigate = useNavigate();
   const { user, selectedParts, upsertPainRecord, painRecords, dailyLog, saveReport, isLoading } = useStore();
   const [currentStep, setCurrentStep] = useState(0);
+
+  // Helper to generate the Heartbeat (Activity) icon as a data URL
+  const getActivityIconDataUrl = () => {
+    // This SVG matches the 'Activity' icon from lucide-react used in Login.tsx
+    // Background: blue-50 (#eff6ff), Stroke: blue-600 (#2563eb)
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24">
+        <rect width="24" height="24" rx="12" fill="#eff6ff"/>
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `.trim();
+    return `data:image/svg+xml;base64,${btoa(svg)}`;
+  };
+
+  // Helper to send notification
+  const sendNotification = (title: string, body: string) => {
+    if (!('Notification' in window)) return;
+    
+    const iconUrl = getActivityIconDataUrl();
+
+    if (Notification.permission === 'granted') {
+        new Notification(title, { body, icon: iconUrl });
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                 new Notification(title, { body, icon: iconUrl });
+            }
+        });
+    }
+  };
 
   if (selectedParts.length === 0) {
      const handleQuickFinish = async () => {
@@ -97,19 +129,46 @@ export const Survey: React.FC = () => {
                 painRecords: finalPainRecords
             };
             
-            // Check for Smart Health Alert
+            // 1. Immediate High Pain Alert
             const hasHighPain = finalPainRecords.some(r => r.painLevel >= 7);
             if (hasHighPain) {
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification('건강 알림', { 
-                        body: `${partNames[record.partId] || record.partId} 부위의 통증이 심각합니다. 전문가와 상담하세요.` 
-                    });
-                } else if ('Notification' in window && Notification.permission !== 'denied') {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                             new Notification('건강 알림', { body: '통증 수치가 위험 수준입니다.' });
+                sendNotification('통증 경고', '통증 수치가 높습니다. 전문가와 상담하거나 휴식을 취하세요.');
+            }
+
+            // 2. Chronic Pain Check (Last 30 Days)
+            if (user?.uid) {
+                // Fetch reports from 35 days ago to ensure we cover a full month
+                const startDate = format(subDays(parseISO(dailyLog.date), 35), 'yyyy-MM-dd');
+                const recentReports = await dbService.fetchRecentReports(user.uid, startDate);
+                
+                // Check each body part recorded today
+                for (const currentRecord of finalPainRecords) {
+                    if (currentRecord.painLevel > 0) {
+                        // Filter history specifically for this body part with pain > 0
+                        const historyForPart = recentReports.filter(h => 
+                            h.painRecords.some(p => p.partId === currentRecord.partId && p.painLevel > 0)
+                        );
+                        
+                        // Add today's record context if not already saved/fetched (optimistic check)
+                        
+                        if (historyForPart.length >= 4) { // At least 4-5 previous records to minimize noise
+                            const sortedHistory = historyForPart.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                            const firstRecordDate = parseISO(sortedHistory[0].date);
+                            const lastRecordDate = parseISO(dailyLog.date); // Today
+                            
+                            const spanDays = differenceInDays(lastRecordDate, firstRecordDate);
+                            
+                            // If pain has persisted for roughly a month (>= 25 days span)
+                            if (spanDays >= 25) {
+                                const partLabel = partNames[currentRecord.partId];
+                                sendNotification(
+                                    '만성 통증 알림', 
+                                    `${partLabel} 부위의 통증이 한 달간 지속되고 있습니다. 병원 방문을 권장합니다.`
+                                );
+                                break; // Notify once to avoid spamming for multiple parts
+                            }
                         }
-                    });
+                    }
                 }
             }
 
