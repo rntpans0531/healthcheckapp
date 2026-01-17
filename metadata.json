@@ -1,0 +1,5 @@
+{
+  "name": "MusculoHealth",
+  "description": "연구실 내 근골격계 통증 자가 진단 및 모니터링을 위한 PWA",
+  "requestFramePermissions": []
+}
