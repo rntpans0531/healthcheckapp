@@ -65,7 +65,7 @@ export const Login: React.FC = () => {
           </div>
           <h1 className="text-2xl font-bold text-slate-800">MusculoHealth</h1>
           <p className="text-slate-500 mt-2 text-center">
-            {isSignUp ? '계정을 생성하세요' : '연구실 연구원을 위한 통증 모니터링'}
+            {isSignUp ? '계정을 생성하세요' : '통증 모니터링을 위한 자가진단'}
           </p>
         </div>
 
