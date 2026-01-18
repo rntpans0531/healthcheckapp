@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { authService } from '../services/firebase';
 import { Activity, Eye, EyeOff } from 'lucide-react';
+import { APP_VERSION } from '../components/Layout';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -139,6 +140,11 @@ export const Login: React.FC = () => {
             </button>
           </p>
         </div>
+      </div>
+      
+      {/* Version Indicator */}
+      <div className="mt-6 text-xs font-bold text-slate-400 font-mono">
+        {APP_VERSION}
       </div>
     </div>
   );

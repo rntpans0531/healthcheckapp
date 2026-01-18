@@ -4,6 +4,8 @@ import { LogOut, Home, User, BarChart2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { authService } from '../services/firebase';
 
+export const APP_VERSION = "v1.0.3";
+
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,13 +19,19 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   };
 
   if (isAuthPage) {
-    return <div className="min-h-screen bg-gray-50">{children}</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 relative">
+        {children}
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center shadow-sm">
-        <h1 className="text-xl font-bold text-primary tracking-tight">MusculoHealth</h1>
+        <div className="flex items-baseline gap-2">
+            <h1 className="text-xl font-bold text-primary tracking-tight">MusculoHealth</h1>
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500 hidden sm:block">{user?.email}</span>
           <button onClick={handleLogout} className="p-2 text-gray-600 hover:text-danger rounded-full hover:bg-gray-100">
@@ -55,6 +63,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </button>
         </div>
       </nav>
+
+      {/* 메인 화면: 하단 네비게이션 위 우측에 표시 */}
+      <div className="fixed bottom-20 right-4 z-30 text-[10px] font-bold text-slate-400 font-mono pointer-events-none select-none bg-white/80 px-1.5 py-0.5 rounded shadow-sm">
+        {APP_VERSION}
+      </div>
     </div>
   );
 };

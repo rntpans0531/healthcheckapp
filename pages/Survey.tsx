@@ -32,8 +32,6 @@ export const Survey: React.FC = () => {
 
   // Helper to generate the Heartbeat (Activity) icon as a data URL
   const getActivityIconDataUrl = () => {
-    // This SVG matches the 'Activity' icon from lucide-react used in Login.tsx
-    // Background: blue-50 (#eff6ff), Stroke: blue-600 (#2563eb)
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24">
         <rect width="24" height="24" rx="12" fill="#eff6ff"/>
@@ -43,20 +41,40 @@ export const Survey: React.FC = () => {
     return `data:image/svg+xml;base64,${btoa(svg)}`;
   };
 
-  // Helper to send notification
+  // Helper to send notification safely
   const sendNotification = (title: string, body: string) => {
-    if (!('Notification' in window)) return;
-    
-    const iconUrl = getActivityIconDataUrl();
+    try {
+        if (!('Notification' in window)) return;
+        
+        const iconUrl = getActivityIconDataUrl();
 
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body, icon: iconUrl });
-    } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-                 new Notification(title, { body, icon: iconUrl });
+        const doNotify = () => {
+            // Try Service Worker notification first (Better for PWA)
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification(title, { body, icon: iconUrl });
+                }).catch(err => {
+                    // Fallback to classic API
+                    console.warn("SW Notification failed, trying fallback", err);
+                    new Notification(title, { body, icon: iconUrl });
+                });
+            } else {
+                new Notification(title, { body, icon: iconUrl });
             }
-        });
+        };
+
+        if (Notification.permission === 'granted') {
+            doNotify();
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    doNotify();
+                }
+            });
+        }
+    } catch (e) {
+        console.warn("Notification system error:", e);
+        // Suppress error to not block main app flow
     }
   };
 
@@ -117,62 +135,67 @@ export const Survey: React.FC = () => {
         recent7Days: formData.recent7Days as boolean
     };
     
+    // 1. Update State
     upsertPainRecord(record);
 
     if (isLastStep) {
-        try {
-            const finalPainRecords = [...painRecords.filter(p => p.partId !== currentPart.id), record];
-            const report = {
-                userId: user?.uid || 'guest',
-                date: dailyLog.date,
-                dailyLog,
-                painRecords: finalPainRecords
-            };
-            
-            // 1. Immediate High Pain Alert
-            const hasHighPain = finalPainRecords.some(r => r.painLevel >= 7);
-            if (hasHighPain) {
-                sendNotification('통증 경고', '통증 수치가 높습니다. 전문가와 상담하거나 휴식을 취하세요.');
-            }
+        // Construct final data locally
+        const finalPainRecords = [...painRecords.filter(p => p.partId !== currentPart.id), record];
+        const report = {
+            userId: user?.uid || 'guest',
+            date: dailyLog.date,
+            dailyLog,
+            painRecords: finalPainRecords
+        };
 
-            // 2. Chronic Pain Check (Last 30 Days)
-            if (user?.uid) {
-                // Fetch reports from 35 days ago to ensure we cover a full month
-                const startDate = format(subDays(parseISO(dailyLog.date), 35), 'yyyy-MM-dd');
-                const recentReports = await dbService.fetchRecentReports(user.uid, startDate);
-                
-                // Check each body part recorded today
-                for (const currentRecord of finalPainRecords) {
-                    if (currentRecord.painLevel > 0) {
-                        // Filter history specifically for this body part with pain > 0
-                        const historyForPart = recentReports.filter(h => 
-                            h.painRecords.some(p => p.partId === currentRecord.partId && p.painLevel > 0)
-                        );
-                        
-                        // Add today's record context if not already saved/fetched (optimistic check)
-                        
-                        if (historyForPart.length >= 4) { // At least 4-5 previous records to minimize noise
-                            const sortedHistory = historyForPart.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                            const firstRecordDate = parseISO(sortedHistory[0].date);
-                            const lastRecordDate = parseISO(dailyLog.date); // Today
+        try {
+            // 2. SAVE FIRST (Critical Path)
+            await saveReport(report);
+
+            // 3. Analysis & Notification (Non-Critical Path)
+            try {
+                // Immediate High Pain Alert
+                const hasHighPain = finalPainRecords.some(r => r.painLevel >= 7);
+                if (hasHighPain) {
+                    sendNotification('통증 경고', '통증 수치가 높습니다. 전문가와 상담하거나 휴식을 취하세요.');
+                }
+
+                // Chronic Pain Check (Last 30 Days)
+                if (user?.uid) {
+                    const startDate = format(subDays(parseISO(dailyLog.date), 35), 'yyyy-MM-dd');
+                    // This query requires index, might fail. Wrapped in try-catch to be safe.
+                    const recentReports = await dbService.fetchRecentReports(user.uid, startDate);
+                    
+                    for (const currentRecord of finalPainRecords) {
+                        if (currentRecord.painLevel > 0) {
+                            const historyForPart = recentReports.filter(h => 
+                                h.painRecords.some(p => p.partId === currentRecord.partId && p.painLevel > 0)
+                            );
                             
-                            const spanDays = differenceInDays(lastRecordDate, firstRecordDate);
-                            
-                            // If pain has persisted for roughly a month (>= 25 days span)
-                            if (spanDays >= 25) {
-                                const partLabel = partNames[currentRecord.partId];
-                                sendNotification(
-                                    '만성 통증 알림', 
-                                    `${partLabel} 부위의 통증이 한 달간 지속되고 있습니다. 병원 방문을 권장합니다.`
-                                );
-                                break; // Notify once to avoid spamming for multiple parts
+                            if (historyForPart.length >= 4) {
+                                const sortedHistory = historyForPart.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                                const firstRecordDate = parseISO(sortedHistory[0].date);
+                                const lastRecordDate = parseISO(dailyLog.date);
+                                
+                                const spanDays = differenceInDays(lastRecordDate, firstRecordDate);
+                                
+                                if (spanDays >= 25) {
+                                    const partLabel = partNames[currentRecord.partId];
+                                    sendNotification(
+                                        '만성 통증 알림', 
+                                        `${partLabel} 부위의 통증이 한 달간 지속되고 있습니다. 병원 방문을 권장합니다.`
+                                    );
+                                    break; 
+                                }
                             }
                         }
                     }
                 }
+            } catch (analysisError) {
+                // Ignore analysis errors (e.g., Missing Index, Notification failure) to ensure UX flow
+                console.warn("Analysis/Notification failed:", analysisError);
             }
 
-            await saveReport(report);
             navigate('/report');
         } catch (e) {
             console.error(e);
