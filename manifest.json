@@ -1,7 +1,7 @@
 {
   "name": "MusculoHealth - 근골격계 자가진단",
   "short_name": "Musculo",
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
