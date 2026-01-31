@@ -9,7 +9,7 @@ interface BodyMapProps {
   onPartClick?: (id: BodyPartId, side: Side) => void;
 }
 
-// 색상 팔레트 (조금 더 부드러운 톤으로 조정 가능)
+// 색상 팔레트 (부드러운 톤)
 const getColor = (level: number) => {
   if (level === 1) return '#60a5fa'; // Soft Blue
   if (level >= 2 && level <= 3) return '#4ade80'; // Soft Green
@@ -50,7 +50,7 @@ export const BodyMap: React.FC<BodyMapProps> = ({ mode, selectedParts = [], pain
     }
   };
 
-  // 스타일: 테두리를 더 연하게 하고(slate-300), 부드러운 호버 효과 적용
+  // 스타일: 부드러운 테두리와 호버 효과
   const pathProps = (id: BodyPartId) => ({
     className: clsx(
       "transition-all duration-300 ease-in-out stroke-slate-300 stroke-[1.5]", 
@@ -62,128 +62,127 @@ export const BodyMap: React.FC<BodyMapProps> = ({ mode, selectedParts = [], pain
 
   return (
     <div className="relative w-full max-w-[300px] mx-auto py-4">
-      {/* SVG 뷰박스를 약간 늘려서 여유 공간 확보 */}
-      <svg viewBox="0 -10 300 620" className="w-full h-auto drop-shadow-sm">
-        <desc>Organic Soft Body Map</desc>
+      <svg viewBox="0 0 300 600" className="w-full h-auto drop-shadow-sm">
+        <desc>Refined Organic Body Map</desc>
 
-        {/* --- HEAD (Visual Only - 더 둥글게) --- */}
+        {/* --- HEAD (Visual Only - 작아짐) --- */}
         <path
-          d="M150 25 C 125 25, 110 45, 110 70 C 110 95, 125 110, 150 110 C 175 110, 190 95, 190 70 C 190 45, 175 25, 150 25 Z"
+          d="M150 35 C 132 35, 122 50, 122 70 C 122 90, 132 105, 150 105 C 168 105, 178 90, 178 70 C 178 50, 168 35, 150 35 Z"
           fill="#f8fafc"
           stroke="#cbd5e1"
           strokeWidth="1.5"
         />
 
-        {/* --- NECK (부드러운 연결) --- */}
+        {/* --- NECK (머리에 맞춰 연결) --- */}
         <g>
           <path // Left
             onClick={() => handleInteraction('neck', 'left')}
-            d="M150 110 C 140 110, 135 112, 128 118 C 130 130, 132 135, 150 135 Z"
+            d="M150 105 C 142 105, 138 108, 132 115 C 134 125, 136 132, 150 135 Z"
             fill={getFill('neck', 'left')} {...pathProps('neck')}
           />
           <path // Right
             onClick={() => handleInteraction('neck', 'right')}
-            d="M150 110 C 160 110, 165 112, 172 118 C 170 130, 168 135, 150 135 Z"
+            d="M150 105 C 158 105, 162 108, 168 115 C 166 125, 164 132, 150 135 Z"
             fill={getFill('neck', 'right')} {...pathProps('neck')}
           />
         </g>
 
-        {/* --- SHOULDERS (둥근 어깨 라인) --- */}
+        {/* --- SHOULDERS (팔과 자연스럽게 겹치도록 수정) --- */}
         <g>
           <path // Left
             onClick={() => handleInteraction('shoulder', 'left')}
-            d="M128 118 C 110 120, 90 125, 80 140 C 85 155, 95 150, 150 135 C 145 128, 135 122, 128 118 Z"
+            d="M132 115 C 115 118, 95 122, 85 135 C 90 150, 100 155, 150 140 C 145 132, 138 120, 132 115 Z"
             fill={getFill('shoulder', 'left')} {...pathProps('shoulder')}
           />
           <path // Right
             onClick={() => handleInteraction('shoulder', 'right')}
-            d="M172 118 C 190 120, 210 125, 220 140 C 215 155, 205 150, 150 135 C 155 128, 165 122, 172 118 Z"
+            d="M168 115 C 185 118, 205 122, 215 135 C 210 150, 200 155, 150 140 C 155 132, 162 120, 168 115 Z"
             fill={getFill('shoulder', 'right')} {...pathProps('shoulder')}
           />
         </g>
 
-        {/* --- CHEST (가슴 근육 표현) --- */}
+        {/* --- CHEST (허리와 매끄럽게 연결) --- */}
         <g onClick={() => handleInteraction('back', 'center')}>
           <path
-            d="M150 135 C 120 140, 95 145, 90 155 C 95 180, 100 210, 150 220 C 200 210, 205 180, 210 155 C 205 145, 180 140, 150 135 Z"
+            d="M150 140 C 125 145, 100 150, 95 160 C 100 185, 105 215, 150 225 C 195 215, 200 185, 205 160 C 200 150, 175 145, 150 140 Z"
             fill={getFill('back', 'center')} {...pathProps('back')}
           />
         </g>
 
-        {/* --- ARMS (Upper - 알통 표현) --- */}
+        {/* --- ARMS (Upper - 어깨 밑으로 자연스럽게 시작) --- */}
         <g>
           <path // Left
             onClick={() => handleInteraction('elbow', 'left')}
-            d="M80 140 C 70 160, 65 200, 70 230 C 85 225, 95 220, 90 155 C 85 145, 82 142, 80 140 Z"
+            d="M85 135 C 75 155, 70 195, 75 225 C 90 220, 100 215, 95 160 C 92 150, 88 140, 85 135 Z"
             fill={getFill('elbow', 'left')} {...pathProps('elbow')}
           />
           <path // Right
             onClick={() => handleInteraction('elbow', 'right')}
-            d="M220 140 C 230 160, 235 200, 230 230 C 215 225, 205 220, 210 155 C 215 145, 218 142, 220 140 Z"
+            d="M215 135 C 225 155, 230 195, 225 225 C 210 220, 200 215, 205 160 C 208 150, 212 140, 215 135 Z"
             fill={getFill('elbow', 'right')} {...pathProps('elbow')}
           />
         </g>
 
-        {/* --- FOREARMS / HANDS (팔뚝 곡선) --- */}
+        {/* --- FOREARMS / HANDS (손 끝을 둥글게) --- */}
         <g>
           <path // Left
             onClick={() => handleInteraction('hand_wrist', 'left')}
-            d="M70 230 C 65 260, 60 300, 40 340 C 55 350, 70 345, 85 330 C 90 280, 85 240, 70 230 Z"
+            d="M75 225 C 70 255, 65 295, 45 335 C 35 345, 50 355, 65 350 C 80 345, 95 335, 90 225 C 85 222, 80 222, 75 225 Z"
             fill={getFill('hand_wrist', 'left')} {...pathProps('hand_wrist')}
           />
           <path // Right
             onClick={() => handleInteraction('hand_wrist', 'right')}
-            d="M230 230 C 235 260, 240 300, 260 340 C 245 350, 230 345, 215 330 C 210 280, 215 240, 230 230 Z"
+            d="M225 225 C 230 255, 235 295, 255 335 C 265 345, 250 355, 235 350 C 220 345, 205 335, 210 225 C 215 222, 220 222, 225 225 Z"
             fill={getFill('hand_wrist', 'right')} {...pathProps('hand_wrist')}
           />
         </g>
 
-        {/* --- ABS / WAIST (허리 라인) --- */}
+        {/* --- ABS / WAIST (가슴과 골반 사이 연결 개선) --- */}
         <g onClick={() => handleInteraction('waist', 'center')}>
           <path
-            d="M150 220 C 120 225, 105 230, 100 270 C 120 285, 150 290, 150 290 C 150 290, 180 285, 200 270 C 195 230, 180 225, 150 220 Z"
+            d="M150 225 C 125 230, 110 235, 105 270 C 125 285, 150 290, 150 290 C 150 290, 175 285, 195 270 C 190 235, 175 230, 150 225 Z"
             fill={getFill('waist', 'center')} {...pathProps('waist')}
           />
         </g>
 
-        {/* --- HIPS / THIGHS (허벅지 근육) --- */}
+        {/* --- HIPS / THIGHS (허리 밑에서 자연스럽게 시작) --- */}
         <g>
           <path // Left
             onClick={() => handleInteraction('hip_thigh', 'left')}
-            d="M100 270 C 90 300, 85 350, 95 400 C 115 395, 135 390, 145 395 C 150 350, 145 300, 150 290 C 130 285, 115 280, 100 270 Z"
+            d="M105 270 C 95 300, 90 350, 100 400 C 120 395, 135 390, 145 395 C 150 350, 145 300, 150 290 C 130 285, 120 280, 105 270 Z"
             fill={getFill('hip_thigh', 'left')} {...pathProps('hip_thigh')}
           />
           <path // Right
             onClick={() => handleInteraction('hip_thigh', 'right')}
-            d="M200 270 C 210 300, 215 350, 205 400 C 185 395, 165 390, 155 395 C 150 350, 155 300, 150 290 C 170 285, 185 280, 200 270 Z"
+            d="M195 270 C 205 300, 210 350, 200 400 C 180 395, 165 390, 155 395 C 150 350, 155 300, 150 290 C 170 285, 180 280, 195 270 Z"
             fill={getFill('hip_thigh', 'right')} {...pathProps('hip_thigh')}
           />
         </g>
 
-        {/* --- KNEES (둥근 무릎) --- */}
+        {/* --- KNEES (무릎 라인 정리) --- */}
         <g>
           <path // Left
             onClick={() => handleInteraction('knee', 'left')}
-            d="M95 400 C 98 420, 100 435, 105 445 C 125 440, 140 435, 142 445 C 145 420, 140 405, 145 395 C 130 395, 110 398, 95 400 Z"
+            d="M100 400 C 102 420, 105 435, 110 445 C 125 440, 140 435, 142 445 C 145 420, 140 405, 145 395 C 130 395, 115 398, 100 400 Z"
             fill={getFill('knee', 'left')} {...pathProps('knee')}
           />
           <path // Right
             onClick={() => handleInteraction('knee', 'right')}
-            d="M205 400 C 202 420, 200 435, 195 445 C 175 440, 160 435, 158 445 C 155 420, 160 405, 155 395 C 170 395, 190 398, 205 400 Z"
+            d="M200 400 C 198 420, 195 435, 190 445 C 175 440, 160 435, 158 445 C 155 420, 160 405, 155 395 C 170 395, 185 398, 200 400 Z"
             fill={getFill('knee', 'right')} {...pathProps('knee')}
           />
         </g>
 
-        {/* --- SHINS / FEET (종아리 곡선) --- */}
+        {/* --- SHINS / FEET (발 끝을 둥글게) --- */}
         <g>
           <path // Left
             onClick={() => handleInteraction('ankle_foot', 'left')}
-            d="M105 445 C 110 480, 115 520, 105 550 C 120 560, 140 555, 150 550 C 145 500, 140 460, 142 445 C 130 440, 115 442, 105 445 Z"
+            d="M110 445 C 115 480, 120 520, 110 545 C 120 560, 145 560, 155 545 C 150 500, 145 460, 142 445 C 130 440, 120 442, 110 445 Z"
             fill={getFill('ankle_foot', 'left')} {...pathProps('ankle_foot')}
           />
           <path // Right
             onClick={() => handleInteraction('ankle_foot', 'right')}
-            d="M195 445 C 190 480, 185 520, 195 550 C 180 560, 160 555, 150 550 C 155 500, 160 460, 158 445 C 170 440, 185 442, 195 445 Z"
+            d="M190 445 C 185 480, 180 520, 190 545 C 180 560, 155 560, 145 545 C 150 500, 155 460, 158 445 C 170 440, 180 442, 190 445 Z"
             fill={getFill('ankle_foot', 'right')} {...pathProps('ankle_foot')}
           />
         </g>
