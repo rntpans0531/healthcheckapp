@@ -25,22 +25,22 @@ export const BodyMap: React.FC<BodyMapProps> = ({ mode, selectedParts = [], pain
     // Report Mode
     if (mode === 'report') {
       const record = painRecords.find(r => r.partId === partId);
-      if (!record) return '#f1f5f9'; // Slate-100 for empty in report
+      if (!record) return '#f8fafc'; // 아주 연한 회색 (기본 배경)
       
       if (record.side === 'both' || record.side === side || record.side === 'center') {
         return getColor(record.painLevel);
       }
-      return '#f1f5f9';
+      return '#f8fafc';
     }
 
     // Select Mode
     const selected = selectedParts.find(p => p.id === partId);
-    if (!selected) return '#f1f5f9'; // Slate-100 for unselected
+    if (!selected) return '#f8fafc'; // 선택 안됨
 
-    if (selected.side === 'center' || selected.side === 'both') return '#3b82f6'; // Active Blue
+    if (selected.side === 'center' || selected.side === 'both') return '#3b82f6'; // 선택됨 (파랑)
     if (selected.side === side) return '#3b82f6';
 
-    return '#f1f5f9';
+    return '#f8fafc';
   };
 
   const handleInteraction = (id: BodyPartId, side: Side) => {
@@ -49,204 +49,183 @@ export const BodyMap: React.FC<BodyMapProps> = ({ mode, selectedParts = [], pain
     }
   };
 
-  // Common polygon props for clean look with rounded corners (fillet effect)
-  const polyProps = (id: BodyPartId) => ({
+  // 스타일: 제공된 이미지처럼 깔끔한 라인과 부드러운 호버 효과
+  const pathProps = (id: BodyPartId) => ({
     className: clsx(
-      "transition-all duration-200 stroke-white stroke-[4]", // Increased stroke width for better rounding
-      mode === 'select' ? "cursor-pointer hover:opacity-80 hover:stroke-blue-200" : ""
+      "transition-all duration-200 stroke-slate-400 stroke-[1.5]", 
+      mode === 'select' ? "cursor-pointer hover:opacity-80 hover:fill-blue-100" : ""
     ),
-    strokeLinejoin: "round" as const // This creates the rounded corner effect
+    strokeLinejoin: "round" as const,
+    strokeLinecap: "round" as const
   });
 
-  // Labels configuration
-  const labels = [
-    { text: '목', y: 72, lineStart: 180 },
-    { text: '어깨', y: 105, lineStart: 220 },
-    { text: '등', y: 140, lineStart: 185 },
-    { text: '팔꿈치', y: 170, lineStart: 230 },
-    { text: '허리', y: 205, lineStart: 180 },
-    { text: '손/손목', y: 235, lineStart: 220 },
-    { text: '엉덩이/허벅지', y: 270, lineStart: 195 },
-    { text: '무릎', y: 330, lineStart: 185 },
-    { text: '발/발목', y: 380, lineStart: 185 },
-  ];
-
   return (
-    <svg viewBox="0 0 360 450" className="w-full h-full max-h-[450px] drop-shadow-xl mx-auto bg-transparent rounded-xl">
-      <desc>Compact polygon body map with labels</desc>
+    <div className="relative w-full max-w-[300px] mx-auto">
+      <svg viewBox="0 0 300 600" className="w-full h-auto drop-shadow-sm">
+        <desc>Smooth Contour Body Map</desc>
+
+        {/* --- HEAD (Visual Only) --- */}
+        <path
+          d="M150 20 C 130 20, 115 40, 115 65 C 115 85, 125 100, 150 100 C 175 100, 185 85, 185 65 C 185 40, 170 20, 150 20 Z"
+          fill="#f8fafc"
+          stroke="#94a3b8"
+          strokeWidth="1.5"
+        />
+
+        {/* --- NECK (Group B - Split) --- */}
+        <g>
+          {/* Left Neck */}
+          <path
+            onClick={() => handleInteraction('neck', 'left')}
+            d="M150 100 L 150 115 L 125 118 L 122 100 Z"
+            fill={getFill('neck', 'left')}
+            {...pathProps('neck')}
+          />
+          {/* Right Neck */}
+          <path
+            onClick={() => handleInteraction('neck', 'right')}
+            d="M150 100 L 150 115 L 175 118 L 178 100 Z"
+            fill={getFill('neck', 'right')}
+            {...pathProps('neck')}
+          />
+        </g>
+
+        {/* --- SHOULDERS (Group B - Split) --- */}
+        <g>
+          {/* Left Shoulder */}
+          <path
+            onClick={() => handleInteraction('shoulder', 'left')}
+            d="M125 118 L 150 115 L 150 120 L 90 135 L 85 120 Z"
+            fill={getFill('shoulder', 'left')}
+            {...pathProps('shoulder')}
+          />
+          {/* Right Shoulder */}
+          <path
+            onClick={() => handleInteraction('shoulder', 'right')}
+            d="M175 118 L 150 115 L 150 120 L 210 135 L 215 120 Z"
+            fill={getFill('shoulder', 'right')}
+            {...pathProps('shoulder')}
+          />
+        </g>
+
+        {/* --- CHEST / UPPER BACK (Group A - Center) --- */}
+        {/* 기존 코드의 ID가 'back'이지만 이미지는 앞면이므로 가슴 부위에 매핑 */}
+        <g onClick={() => handleInteraction('back', 'center')}>
+          <path
+            d="M90 135 L 150 120 L 210 135 L 205 200 L 150 210 L 95 200 Z"
+            fill={getFill('back', 'center')}
+            {...pathProps('back')}
+          />
+          {/* 가슴 근육 디테일 라인 (장식용) */}
+          <path d="M150 120 L 150 210 M 95 200 Q 150 220 205 200" fill="none" stroke="#cbd5e1" strokeWidth="1" className="pointer-events-none" />
+        </g>
+
+        {/* --- ARMS (Upper) --- */}
+        <g>
+          {/* Left Upper Arm (ID: elbow로 매핑 - 기존 로직 유지) */}
+          <path
+            onClick={() => handleInteraction('elbow', 'left')}
+            d="M85 120 L 90 135 L 95 200 L 80 230 L 55 220 L 60 140 Z"
+            fill={getFill('elbow', 'left')}
+            {...pathProps('elbow')}
+          />
+          {/* Right Upper Arm */}
+          <path
+            onClick={() => handleInteraction('elbow', 'right')}
+            d="M215 120 L 210 135 L 205 200 L 220 230 L 245 220 L 240 140 Z"
+            fill={getFill('elbow', 'right')}
+            {...pathProps('elbow')}
+          />
+        </g>
+
+        {/* --- FOREARMS / HANDS (Group B - Split) --- */}
+        <g>
+          {/* Left Forearm/Hand */}
+          <path
+            onClick={() => handleInteraction('hand_wrist', 'left')}
+            d="M80 230 L 55 220 L 45 300 L 30 330 L 60 340 L 85 235 Z"
+            fill={getFill('hand_wrist', 'left')}
+            {...pathProps('hand_wrist')}
+          />
+          {/* Right Forearm/Hand */}
+          <path
+            onClick={() => handleInteraction('hand_wrist', 'right')}
+            d="M220 230 L 245 220 L 255 300 L 270 330 L 240 340 L 215 235 Z"
+            fill={getFill('hand_wrist', 'right')}
+            {...pathProps('hand_wrist')}
+          />
+        </g>
+
+        {/* --- ABS / WAIST (Group A - Center) --- */}
+        <g onClick={() => handleInteraction('waist', 'center')}>
+          <path
+            d="M95 200 L 150 210 L 205 200 L 200 260 L 150 280 L 100 260 Z"
+            fill={getFill('waist', 'center')}
+            {...pathProps('waist')}
+          />
+           {/* 복근 디테일 라인 (장식용) */}
+           <path d="M150 210 L 150 280 M 100 260 Q 150 290 200 260" fill="none" stroke="#cbd5e1" strokeWidth="1" className="pointer-events-none" />
+        </g>
+
+        {/* --- HIPS / THIGHS (Group B - Split) --- */}
+        <g>
+          {/* Left Thigh */}
+          <path
+            onClick={() => handleInteraction('hip_thigh', 'left')}
+            d="M100 260 L 150 280 L 150 300 L 140 380 L 95 370 L 90 280 Z"
+            fill={getFill('hip_thigh', 'left')}
+            {...pathProps('hip_thigh')}
+          />
+          {/* Right Thigh */}
+          <path
+            onClick={() => handleInteraction('hip_thigh', 'right')}
+            d="M200 260 L 150 280 L 150 300 L 160 380 L 205 370 L 210 280 Z"
+            fill={getFill('hip_thigh', 'right')}
+            {...pathProps('hip_thigh')}
+          />
+        </g>
+
+        {/* --- KNEES (Group B - Split) --- */}
+        <g>
+          {/* Left Knee */}
+          <path
+            onClick={() => handleInteraction('knee', 'left')}
+            d="M95 370 L 140 380 L 138 420 L 98 410 Z"
+            fill={getFill('knee', 'left')}
+            {...pathProps('knee')}
+          />
+          {/* Right Knee */}
+          <path
+            onClick={() => handleInteraction('knee', 'right')}
+            d="M205 370 L 160 380 L 162 420 L 202 410 Z"
+            fill={getFill('knee', 'right')}
+            {...pathProps('knee')}
+          />
+        </g>
+
+        {/* --- SHINS / FEET (Group B - Split) --- */}
+        <g>
+          {/* Left Shin/Foot */}
+          <path
+            onClick={() => handleInteraction('ankle_foot', 'left')}
+            d="M98 410 L 138 420 L 135 500 L 145 530 L 105 530 L 100 480 Z"
+            fill={getFill('ankle_foot', 'left')}
+            {...pathProps('ankle_foot')}
+          />
+          {/* Right Shin/Foot */}
+          <path
+            onClick={() => handleInteraction('ankle_foot', 'right')}
+            d="M202 410 L 162 420 L 165 500 L 155 530 L 195 530 L 200 480 Z"
+            fill={getFill('ankle_foot', 'right')}
+            {...pathProps('ankle_foot')}
+          />
+        </g>
+      </svg>
       
-      {/* --- HEAD (Visual Only) --- */}
-      <circle cx="150" cy="40" r="25" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="2" />
-
-      {/* --- NECK & TRAPS (Group B - Split) --- */}
-      <g>
-        {/* Left */}
-        <polygon 
-          onClick={() => handleInteraction('neck', 'left')}
-          points="130,60 150,60 150,85 115,85" 
-          fill={getFill('neck', 'left')}
-          {...polyProps('neck')}
-        />
-        {/* Right */}
-        <polygon 
-          onClick={() => handleInteraction('neck', 'right')}
-          points="150,60 170,60 185,85 150,85" 
-          fill={getFill('neck', 'right')}
-          {...polyProps('neck')}
-        />
-      </g>
-
-      {/* --- SHOULDERS (Group B - Split) --- */}
-      <g>
-        {/* Left */}
-        <polygon 
-          onClick={() => handleInteraction('shoulder', 'left')}
-          points="115,85 75,95 80,130 115,130" 
-          fill={getFill('shoulder', 'left')} 
-          {...polyProps('shoulder')}
-        />
-        {/* Right */}
-        <polygon 
-          onClick={() => handleInteraction('shoulder', 'right')}
-          points="185,85 225,95 220,130 185,130" 
-          fill={getFill('shoulder', 'right')} 
-          {...polyProps('shoulder')}
-        />
-      </g>
-
-      {/* --- BACK (Group A - Center) --- */}
-      <g onClick={() => handleInteraction('back', 'center')}>
-        <polygon 
-          points="115,85 185,85 185,130 175,190 125,190 115,130" 
-          fill={getFill('back', 'center')} 
-          {...polyProps('back')}
-        />
-      </g>
-
-      {/* --- WAIST (Group A - Center) --- */}
-      <g onClick={() => handleInteraction('waist', 'center')}>
-        <polygon 
-          points="125,190 175,190 180,215 120,215" 
-          fill={getFill('waist', 'center')} 
-          {...polyProps('waist')}
-        />
-      </g>
-
-      {/* --- HIPS / THIGHS (Group B - Split) --- */}
-      <g>
-        {/* Left */}
-        <polygon 
-          onClick={() => handleInteraction('hip_thigh', 'left')}
-          points="120,215 150,215 150,310 110,310 100,245" 
-          fill={getFill('hip_thigh', 'left')} 
-          {...polyProps('hip_thigh')}
-        />
-        {/* Right */}
-        <polygon 
-          onClick={() => handleInteraction('hip_thigh', 'right')}
-          points="180,215 150,215 150,310 190,310 200,245" 
-          fill={getFill('hip_thigh', 'right')} 
-          {...polyProps('hip_thigh')}
-        />
-      </g>
-
-      {/* --- ARMS / ELBOW (Group B - Split) --- */}
-      <g>
-        {/* Left */}
-        <polygon 
-          onClick={() => handleInteraction('elbow', 'left')}
-          points="80,130 115,130 110,190 65,190" 
-          fill={getFill('elbow', 'left')} 
-          {...polyProps('elbow')}
-        />
-        {/* Right */}
-        <polygon 
-          onClick={() => handleInteraction('elbow', 'right')}
-          points="220,130 185,130 190,190 235,190" 
-          fill={getFill('elbow', 'right')} 
-          {...polyProps('elbow')}
-        />
-      </g>
-
-      {/* --- HANDS / WRISTS (Group B - Split) --- */}
-      <g>
-        {/* Left */}
-        <polygon 
-          onClick={() => handleInteraction('hand_wrist', 'left')}
-          points="65,190 110,190 98,260 77,260" 
-          fill={getFill('hand_wrist', 'left')} 
-          {...polyProps('hand_wrist')}
-        />
-        {/* Right */}
-        <polygon 
-          onClick={() => handleInteraction('hand_wrist', 'right')}
-          points="235,190 190,190 202,260 223,260" 
-          fill={getFill('hand_wrist', 'right')} 
-          {...polyProps('hand_wrist')}
-        />
-      </g>
-
-      {/* --- KNEES (Group B - Split) --- */}
-      <g>
-        {/* Left */}
-        <polygon 
-          onClick={() => handleInteraction('knee', 'left')}
-          points="110,310 150,310 150,350 115,350" 
-          fill={getFill('knee', 'left')} 
-          {...polyProps('knee')}
-        />
-        {/* Right */}
-        <polygon 
-          onClick={() => handleInteraction('knee', 'right')}
-          points="190,310 150,310 150,350 185,350" 
-          fill={getFill('knee', 'right')} 
-          {...polyProps('knee')}
-        />
-      </g>
-
-      {/* --- ANKLES / FEET (Group B - Split) --- */}
-      <g>
-        {/* Left */}
-        <polygon 
-          onClick={() => handleInteraction('ankle_foot', 'left')}
-          points="115,350 150,350 145,400 105,405 105,380" 
-          fill={getFill('ankle_foot', 'left')} 
-          {...polyProps('ankle_foot')}
-        />
-        {/* Right */}
-        <polygon 
-          onClick={() => handleInteraction('ankle_foot', 'right')}
-          points="185,350 150,350 155,400 195,405 195,380" 
-          fill={getFill('ankle_foot', 'right')} 
-          {...polyProps('ankle_foot')}
-        />
-      </g>
-
-      {/* --- LABELS --- */}
-      <g className="select-none pointer-events-none">
-        {labels.map((l, i) => (
-          <React.Fragment key={i}>
-            <text 
-              x="350" 
-              y={l.y + 4} 
-              textAnchor="end" 
-              className="font-bold fill-slate-500"
-              style={{ fontSize: '12px' }}
-            >
-              {l.text}
-            </text>
-            <line 
-              x1={l.lineStart} 
-              y1={l.y} 
-              x2="270" 
-              y2={l.y} 
-              stroke="#cbd5e1" 
-              strokeWidth="1" 
-              strokeDasharray="2 2"
-            />
-          </React.Fragment>
-        ))}
-      </g>
-    </svg>
+      {/* 라벨 (절대 위치로 배치) */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+          {/* 필요하다면 여기에 텍스트 라벨 추가 가능 (기존 방식처럼 SVG 내부에 넣어도 되지만, 깔끔함을 위해 제거하거나 별도 레이어로 추천) */}
+      </div>
+    </div>
   );
 };
